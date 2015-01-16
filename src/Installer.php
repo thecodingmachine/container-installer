@@ -80,20 +80,26 @@ class Installer extends LibraryInstaller
         		if (!is_array($factories) || self::isAssoc($arr)) {
         			$factories = array($factories);
         		}
-                        foreach ($factories as $key => $factory) {
-                            if (is_array($factory)) {
-                                if (count($factories) == 0) {
-                                    $containerName = "Container for package ".$package->getName();
-                                } else {
-                                    $containerName = "Container number $key for package ".$package->getName();
-                                }
-                                $factory = [
-                                    "name"=>$package->getName().'_'.$key,
-                                    "description"=>$containerName,
-                                    "factory"=>$factory
-                                ];
-                            }
+                foreach ($factories as $key => $factory) {
+                    if (!is_array($factory)) {
+                    	if (isset($package['name'])) {
+                    		$packageName = $package['name'];
+                    	} else {
+                    		$packageName = 'root';
+                    	}
+                        if (count($factories) == 0) {
+                            $containerName = "Container for package ".$packageName;
+                        } else {
+                            $containerName = "Container number $key for package ".$packageName;
                         }
+                        $factory = [
+                            "name"=>$packageName.'_'.$key,
+                            "description"=>$containerName,
+                            "factory"=>$factory
+                        ];
+                        $factories[$key] = $factory;
+                    }
+                }
         		$factoryList = array_merge($factoryList, $factories);
         	}
         }
@@ -104,10 +110,19 @@ class Installer extends LibraryInstaller
         	// TODO: security checks
 		// See if we can use Symfony's FileSystem.
 	        $fp = fopen("containers.php", "w");
-	        fwrite($fp, "<?php\n");
+	        fwrite($fp, "<?php\nreturn [\n");
 	        foreach ($factoryList as $factory) {
-	        	fwrite($fp, "\$rootContainer->addContainer(".$factory."(\$rootContainer));\n");
+	        	fwrite($fp, "    [\n");
+	        	foreach ($factory as $key => $value) {
+	        		if ($key == 'factory') {
+	        			fwrite($fp, "        '$key' => ".$value.",\n");
+	        		} else {
+	        			fwrite($fp, "        '$key' => ".var_export($value, true).",\n");
+	        		}
+	        	}
+	        	fwrite($fp, "    ],\n");
 	        }
+	        fwrite($fp, "];\n");
         }
     }
 

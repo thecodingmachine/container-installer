@@ -1,10 +1,14 @@
-About RootContainer
-===================
+About Container-Installer
+=========================
 
 This project is a test project developed as a proof of concept while working on the [ContainerInterop](https://github.com/container-interop/container-interop/) project.
 
-The goal of this project is to create a "root container", that can automatically detect and add containers contained
-in other packages into a global composite container that can be used by the application.
+The big picture
+---------------
+
+The ultimate goal is to allow the application developer to easily create a "root container", 
+that can automatically detect and add containers contained in other packages into a global 
+composite container that can be used by the application.
 
 Compared to the classical way of thinking about a web application, this is a paradigm shift.
 
@@ -14,27 +18,14 @@ This is what SF2 bundles, ZF2 modules or Mouf2 packages are doing.
 **Using RootController**, each package provides its own DI container that contains instances. DI containers are added
 to a global container that is queried.
 
-Benefits
---------
-Each package provides its container. The package is not dependent on the DI container used in the application.
-This way, we can provide packages that are framework agnostic.
+About this package
+------------------
 
-Downsides
----------
-The classical implementation of the composite controller might imply a performance hit. We will need to think of a way to 
-improve the performance of the composite container (maybe by doing entries maps, mapping entries to their associated container...) 
+The goal of this package is simply to provide an easy way for application developers to detect DI containers that might
+be declared in Composer packages they use.
 
-About other projects
---------------------
-This is not the only project working on the "one container per package" paradigm. The [FrameworkInterop project](https://github.com/mnapoli/framework-interop)
-by @mnapoli is also taking the same route (although its scope is larger).
-
-How to create a package with an integrated DI container
-=======================================================
-
-This is the nice part: it is easy!
-
-In your *composer.json* file, add an "extra" session like this one:
+This project adds an additional step to Composer "install", just after the Composer dumps the autoloader.
+The Container-Installer will scan all packages *composer.json* files and will look for a section like:
 
 ```json
 {
@@ -45,6 +36,8 @@ In your *composer.json* file, add an "extra" session like this one:
 	}
 }
 ```
+
+This section actually declares container factories that can be bundled in the package.
 
 The "container-factory" parameter must point to a function or a static method that returns the container.
 
@@ -81,67 +74,132 @@ PimpleInterop is a modified version of Pimple 1 that adds compatibility with the
 to delegate dependencies fetching to the $rootContainer. For instance, `PimpleInterop` can delegate dependencies fetching if
 you pass another container as the first argument of the constructor.
 
-Note: your package does not have to require the `mouf/root-container` package. This is sweet because if 
+Note: your package does not have to require the `mouf/container-installer` package. This is sweet because if 
 other container aggregators follow the same convention (referencing factory code in `composer.json` extra section),
 there can easily be many different implementations of a root-container (maybe one per framework). 
 
-How to use the root container in your project?
-==============================================
 
-First of all, you have to use packages that have integrated DI containers (see previous chapter).
 
-All you have to do is to include the root-container Composer package in your project:
+How to use a root container in your project?
+============================================
 
-**composer.json**
+This package will simply create a `containers.php` file at the root of your project.
+This `containers.php` file will contain a list of containers in this form:
+
+```php
+<?php
+return [
+    [
+        'name' => '__root___0',
+        'description' => 'Container number 0 for package __root__',
+        'factory' => My\ContainerFactory::getContainer,
+    ],
+];
+```
+
+From there it is up to the application developer to use that file.
+
+Using Acclimate's CompositeContainer, a usage might look like this:
+
+```php
+use Acclimate\Container\CompositeContainer;
+
+// Let's get the containers list
+$container_descriptors = require 'containers.php';
+$containers_list = array_map(function($descriptor) {
+	return $descriptor['factory'];
+}, $container_descriptors); 
+
+// Let's create a composite container from the list of containers.
+$rootContainer = new CompositeContainer($containers_list); 
+
+$myEntry = $rootContainer->get('myEntry');
+```
+
+Allowed syntax
+--------------
+Those syntaxes are all valid to declare container factories in **composer.json**:
+
+Simply declaring a container-factory **via callback**:
+
 ```json
 {
-	"require" : {
-		"mouf/root-container" : "dev-master"
-	},
-	"repositories" : [{
-		"type" : "git",
-		"url" : "git@github.com:moufmouf/root-container.git"
-	}]
+	"extra": {
+		"container-interop": {
+			"container-factory": "My\\ContainerFactory::getContainer"
+		}
+	}
 }
 ```
 
-Getting an instance of the root container is easy:
+Declaring an **array of container-factories via callback**:
 
-```php
-use Mouf\RootContainer;
-
-$container = RootContainerFactory::get();
-$myEntry = $container->get('myEntry');
+```json
+{
+	"extra": {
+		"container-interop": {
+			"container-factory": [
+				"My\\ContainerFactory1::getContainer",
+				"My\\ContainerFactory2::getContainer",
+				"My\\ContainerFactory3::getContainer"
+			]
+		}
+	}
+}
 ```
 
-"Hey, but you are using a static method to get the RootContainer instance! Static methods are evil!"
+Declaring a container-factory **descriptor** (it contains additionnal data about the factory):
 
-Mmmm... yeah, of course. But containers are constructed using static methods anyway! So it is not that bad.
-The real problem is that the RootContainer is accessible from anywhere in the code (since it is exposed statically).
-If this is an issue, do not use RootContainer. Instead, write your own RootContainer implementation
-that fits the framework you are using.
-
-Testing
-=======
-
-The [root-container-test-project on GitHub](https://github.com/moufmouf/root-container-test-project) provides
-a nice playground to see how the root-container behaves.
-
-```
-# Download the project
-git clone https://github.com/moufmouf/root-container-test-project.git
-cd root-container-test-project
-# Install dependencies (this will also compile the root-container)
-php composer.phar install
-# Run the tests
-vendor/bin/phpunit
+```json
+{
+	"extra": {
+		"container-interop": {
+			"container-factory": {
+				name: "a unique name for the factory",
+				description: "a description of what the factory does",
+				factory: "My\\ContainerFactory::getContainer"
+			}
+		}
+	}
+}
 ```
 
-This test project requires 2 subprojects ([A](https://github.com/moufmouf/root-container-test-subprojectA) and 
-[B](https://github.com/moufmouf/root-container-test-subprojectB)).
-Both subprojects are providing custom DI containers [through their `composer.json` file](https://github.com/moufmouf/root-container-test-subprojectA/blob/master/composer.json).
-The DI containers are provided by [PimpleInterop](https://github.com/moufmouf/root-container-test-subprojectB/blob/master/src/Acme/ProjectB/Factory.php),
-an extended version of Pimple that supports the ContainerInterop standard.
+Declaring an **array of container-factory descriptors**:
+
+```json
+{
+	"extra": {
+		"container-interop": [
+			"container-factory": {
+				name: "a unique name for the factory",
+				description: "a description of what the factory does",
+				factory: "My\\ContainerFactory::getContainer"
+			},
+			{
+				name: "a unique name for another factory",
+				description: "a description of what the factory does",
+				factory: "My\\ContainerFactory2::getContainer"
+			}]
+		}
+	}
+}
+```
+
+
+Benefits
+--------
+Each package provides its container. The package is not dependent on the DI container used in the application.
+This way, we can provide packages that are framework agnostic.
+
+Downsides
+---------
+The classical implementation of the composite controller might imply a performance hit. We will need to think of a way to 
+improve the performance of the composite container (maybe by doing entries maps, mapping entries to their associated container...) 
+
+About other projects
+--------------------
+This is not the only project working on the "one container per package" paradigm. The [FrameworkInterop project](https://github.com/mnapoli/framework-interop)
+by @mnapoli is also taking the same route (although its scope is larger).
 
 About performance
 =================
