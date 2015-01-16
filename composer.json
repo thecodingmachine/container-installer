@@ -9,7 +9,7 @@
 		"installer"
 	],
 	"require" : {
-		"php" : ">=5.3",
+		"php" : ">=5.4",
 		"container-interop/container-interop" : "~1.0"
 	},
 	"autoload" : {

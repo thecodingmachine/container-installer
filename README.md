@@ -93,9 +93,12 @@ return [
         'name' => '__root___0',
         'description' => 'Container number 0 for package __root__',
         'factory' => My\ContainerFactory::getContainer,
+        'enable' => true
     ],
 ];
 ```
+
+Please note that the developer can enable or disable packages manually, using the 'enable' attribute.
 
 From there it is up to the application developer to use that file.
 
@@ -104,14 +107,19 @@ Using Acclimate's CompositeContainer, a usage might look like this:
 ```php
 use Acclimate\Container\CompositeContainer;
 
+// Let's create a composite container
+$rootContainer = new CompositeContainer();
+
 // Let's get the containers list
 $container_descriptors = require 'containers.php';
-$containers_list = array_map(function($descriptor) {
-	return $descriptor['factory'];
-}, $container_descriptors); 
 
-// Let's create a composite container from the list of containers.
-$rootContainer = new CompositeContainer($containers_list); 
+// Let's add containers to the root container.
+foreach ($container_descriptors as $descriptor) {
+    if (descriptor['enable']) {
+        $container = $descriptor['factory']($rootContainer);
+        $rootContainer->addContainer($container);
+    }
+}
 
 $myEntry = $rootContainer->get('myEntry');
 ```
@@ -155,30 +163,33 @@ Declaring a container-factory **descriptor** (it contains additionnal data about
 	"extra": {
 		"container-interop": {
 			"container-factory": {
-				name: "a unique name for the factory",
-				description: "a description of what the factory does",
-				factory: "My\\ContainerFactory::getContainer"
+				"name": "a unique name for the factory",
+				"description": "a description of what the factory does",
+				"factory": "My\\ContainerFactory::getContainer"
 			}
 		}
 	}
 }
 ```
 
+Note: all parameters of a descriptor are optionnal, except for the "factory" part.
+
 Declaring an **array of container-factory descriptors**:
 
 ```json
 {
 	"extra": {
-		"container-interop": [
-			"container-factory": {
-				name: "a unique name for the factory",
-				description: "a description of what the factory does",
-				factory: "My\\ContainerFactory::getContainer"
+		"container-interop": 
+			"container-factory": 
+			[{
+				"name": "a unique name for the factory",
+				"description": "a description of what the factory does",
+				"factory": "My\\ContainerFactory::getContainer"
 			},
 			{
-				name: "a unique name for another factory",
-				description: "a description of what the factory does",
-				factory: "My\\ContainerFactory2::getContainer"
+				"name": "a unique name for another factory",
+				"description": "a description of what the factory does",
+				"factory": "My\\ContainerFactory2::getContainer"
 			}]
 		}
 	}

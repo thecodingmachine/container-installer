@@ -77,7 +77,7 @@ class Installer extends LibraryInstaller
         		// Array of strings: an array of factory code
         		// Factory descriptor: like { "name"=>"", "description"=>"toto", "factory"=>"code" }
         		// Array of factory descriptor: like [{ "name"=>"", "description"=>"toto", "factory"=>"code" }]
-        		if (!is_array($factories) || self::isAssoc($arr)) {
+        		if (!is_array($factories) || self::isAssoc($factories)) {
         			$factories = array($factories);
         		}
                 foreach ($factories as $key => $factory) {
@@ -105,6 +105,11 @@ class Installer extends LibraryInstaller
         }
         
         // Now, we should merge this with the existing containers.php if it exists.
+        if (file_exists("containers.php")) {
+        	$existingFactoryList = require 'containers.php';
+        } else {
+        	$existingFactoryList = [];
+        }
 
         if ($factoryList) {
         	// TODO: security checks
@@ -112,6 +117,17 @@ class Installer extends LibraryInstaller
 	        $fp = fopen("containers.php", "w");
 	        fwrite($fp, "<?php\nreturn [\n");
 	        foreach ($factoryList as $factory) {
+	        	// Let's see if the factory exists in the existing list:
+	        	foreach ($existingFactoryList as $item) {
+	        		if ($factory['name'] == $item['name']) {
+	        			$factory = array_merge($item, $factory);
+	        			break;
+	        		}
+	        	}
+	        	if (!isset($factory['enable'])) {
+	        		$factory['enable'] = true;
+	        	}
+	        	
 	        	fwrite($fp, "    [\n");
 	        	foreach ($factory as $key => $value) {
 	        		if ($key == 'factory') {
