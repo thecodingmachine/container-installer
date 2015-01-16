@@ -15,7 +15,7 @@ Compared to the classical way of thinking about a web application, this is a par
 **In a "classical" application**, packages added to the application may add new instances to the main and only DI container.
 This is what SF2 bundles, ZF2 modules or Mouf2 packages are doing.
 
-**Using RootController**, each package provides its own DI container that contains instances. DI containers are added
+**Using this approach**, each package provides its own DI container that contains instances. DI containers are added
 to a global container that is queried.
 
 About this package
