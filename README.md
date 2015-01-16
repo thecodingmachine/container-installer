@@ -179,7 +179,7 @@ Declaring an **array of container-factory descriptors**:
 ```json
 {
 	"extra": {
-		"container-interop": 
+		"container-interop": {
 			"container-factory": 
 			[{
 				"name": "a unique name for the factory",
