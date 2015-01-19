@@ -2,7 +2,7 @@
 namespace Mouf\ContainerInstaller;
 
 use Composer\Composer;
-use Composer\Installer\LibraryInstaller;
+use Composer\IO\IOInterface;
 use Composer\Script\Event;
 use Composer\Package\PackageInterface;
 use Composer\Package\AliasPackage;
@@ -13,26 +13,12 @@ use Composer\Package\Dumper\ArrayDumper;
  * RootContainer Installer for Composer.
  * (based on RobLoach's code for ComponentInstaller)
  */
-class Installer extends LibraryInstaller
+class ContainerInstallerPlugin implements PluginInterface
 {
 
-    /**
-     * The location where Components are to be installed.
-     */
-    protected $componentDir;
-
-    /**
-     * {@inheritDoc}
-     *
-     * Containers are supported by all packages. This checks wheteher or not the
-     * entire package is a "container", as well as injects the script to act
-     * on containers embedded in packages that are not just "container" types.
-     */
-    public function supports($packageType)
-    {
-        // Containers are supported by all package types. We will just act on
-        // the root package's scripts if available.
-        $rootPackage = isset($this->composer) ? $this->composer->getPackage() : null;
+	public function activate(Composer $composer, IOInterface $io)
+	{
+		$rootPackage =$composer->getPackage();
         if (isset($rootPackage)) {
             // Ensure we get the root package rather than its alias.
             while ($rootPackage instanceof AliasPackage) {
@@ -44,15 +30,12 @@ class Installer extends LibraryInstaller
                 $scripts = $rootPackage->getScripts();
                 // Act on the "post-autoload-dump" command so that we can act on all
                 // the installed packages.
-                $scripts['post-autoload-dump']['rootcontainer-installer'] = 'Mouf\\ContainerInstaller\\Installer::postAutoloadDump';
+                $scripts['post-autoload-dump']['rootcontainer-installer'] = 'Mouf\\ContainerInstaller\\ContainerInstallerPlugin::postAutoloadDump';
                 $rootPackage->setScripts($scripts);
             }
         }
-
-        // Explicitly state support of "container" packages.
-        return $packageType === 'container';
-    }
-
+	}
+	
     /**
      * Script callback; Acted on after the autoloader is dumped.
      */
@@ -196,7 +179,7 @@ class Installer extends LibraryInstaller
     		$packages[] = $package;
     	}
     
-    	// TODO: order the packages in reverse order of dependencies
+    	$packages = PackagesOrderer::reorderPackages($packages);
     	
     	return $packages;
     }

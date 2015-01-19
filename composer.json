@@ -1,7 +1,8 @@
 {
 	"name" : "mouf/container-installer",
 	"description" : "This package contains a PHP dependency injection container detector and aggregator. The idea is to have potentially one DI container per composer package and to aggregate all those containers into a 'root' container.",
-	"type" : "composer-installer",
+	"type" : "composer-plugin",
+	"license": "MIT",
 	"homepage" : "http://mouf-php.com",
 	"keywords" : [
 		"ContainerInterop",
@@ -10,7 +11,8 @@
 	],
 	"require" : {
 		"php" : ">=5.4",
-		"container-interop/container-interop" : "~1.0"
+		"container-interop/container-interop" : "~1.0",
+		"composer-plugin-api": "1.0.0"
 	},
 	"autoload" : {
 		"psr-4" : {
@@ -18,6 +20,6 @@
 		}
 	},
 	"extra" : {
-		"class" : "Mouf\\ContainerInstaller\\Installer"
+		"class" : "Mouf\\ContainerInstaller\\ContainerInstallerPlugin"
 	}
 }
