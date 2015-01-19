@@ -181,7 +181,7 @@ class ContainerInstallerPlugin implements PluginInterface
     	}
     
     	$packages = PackagesOrderer::reorderPackages($packages);
-    	
+    	 
     	return $packages;
     }
 }

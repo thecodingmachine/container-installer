@@ -14,7 +14,7 @@ class PackagesOrderer {
 	 * Each time we go through a package, lets ensure the package is not already part of the packages to install.
 	 * If so, ignore.
 	 *
-	 * @param PackageInterface[] $unorderedPackagesList
+	 * @param array<array> $unorderedPackagesList
 	 */
 	public static function reorderPackages(array $unorderedPackagesList) {
 		// The very first step is to reorder the packages alphabetically.
@@ -36,12 +36,12 @@ class PackagesOrderer {
 	 * Invariant hypothesis for this function: $orderedPackagesList is already ordered and the package we add
 	 * has all its dependencies already accounted for. If not, we add the dependencies first.
 	 *
-	 * @param PackageInterface $package
-	 * @param PackageInterface[] $orderedPackagesList The list of sorted packages
-	 * @param PackageInterface[] $availablePackages The list of all packages not yet sorted
-	 * @return PackageInterface[]
+	 * @param array $package
+	 * @param array<array> $orderedPackagesList The list of sorted packages
+	 * @param array<array> $availablePackages The list of all packages not yet sorted
+	 * @return array<array>
 	 */
-	private static function walkPackagesList(PackageInterface $package, array $orderedPackagesList, array &$availablePackages) {
+	private static function walkPackagesList(array $package, array $orderedPackagesList, array &$availablePackages) {
 		// First, let's check that the package we want to add is not already in our list.
 		foreach ($orderedPackagesList as $includedPackage) {
 			if ($includedPackage->equals($package)) {
@@ -55,12 +55,13 @@ class PackagesOrderer {
 		unset($availablePackages[$key]);
 	
 		// Now, let's see if there are dependencies.
-		foreach ($package->getRequires() as $require) {
-			/* @var $require Link */
-			foreach ($availablePackages as $iterPackage) {
-				if ($iterPackage->getName() == $require->getTarget()) {
-					$orderedPackagesList = self::walkPackagesList($iterPackage, $orderedPackagesList, $availablePackages);
-					break;
+		if (isset($package['require'])) {
+			foreach ($package['require'] as $require => $version) {
+				foreach ($availablePackages as $iterPackage) {
+					if ($iterPackage['name'] == $require) {
+						$orderedPackagesList = self::walkPackagesList($iterPackage, $orderedPackagesList, $availablePackages);
+						break;
+					}
 				}
 			}
 		}
