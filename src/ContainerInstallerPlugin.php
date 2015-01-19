@@ -8,6 +8,7 @@ use Composer\Package\PackageInterface;
 use Composer\Package\AliasPackage;
 use Composer\Util\Filesystem;
 use Composer\Package\Dumper\ArrayDumper;
+use Composer\Plugin\PluginInterface;
 
 /**
  * RootContainer Installer for Composer.
