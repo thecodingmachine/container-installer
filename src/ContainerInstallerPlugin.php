@@ -6,7 +6,6 @@ use Composer\IO\IOInterface;
 use Composer\Script\Event;
 use Composer\Package\PackageInterface;
 use Composer\Package\AliasPackage;
-use Composer\Util\Filesystem;
 use Composer\Package\Dumper\ArrayDumper;
 use Composer\Plugin\PluginInterface;
 
@@ -97,7 +96,6 @@ class ContainerInstallerPlugin implements PluginInterface
 
         if ($factoryList) {
             // TODO: security checks
-        // See if we can use Symfony's FileSystem.
             $fp = fopen("containers.php", "w");
             fwrite($fp, "<?php\nreturn [\n");
             foreach ($factoryList as $factory) {
