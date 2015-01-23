@@ -56,18 +56,19 @@ class ContainerFactory {
 	public static function getContainer(ContainerInterface $rootContainer) {
 		if (!$this->container) {
 			// Delegate dependencies fetching to the root container.
-			$this->container = new PimpleInterop($rootContainer);
-			$this->container['hello'] = $this->container->share(function(ContainerInterface $container) {
-				return array('hello' => $container->get('world'));
-			}); 
+			$this->container = new Picotainer([
+				"hello" => function(ContainerInterface $container) {
+					return array('hello' => $container->get('world'));
+				}
+			], $rootContainer);
 		}
 		return $this->container;
 	}
 }
 ```
 
-A quick note about this code: we are providing a [PimpleInterop container](https://github.com/moufmouf/pimple-interop).
-PimpleInterop is a modified version of Pimple 1 that adds compatibility with the [ContainerInterop](https://github.com/container-interop/container-interop/) project.
+A quick note about this code: we are providing a [Picotainer container](http://mouf-php.com/packages/mouf/picotainer/README.md).
+Picotainer is a minimalistic container fully compativle with the [ContainerInterop](https://github.com/container-interop/container-interop/) project.
 
 **Important**: the factory takes one compulsory parameter: the `$rootContainer`. If some entries in your container are containing
 *external dependencies* (dependencies that are not part of the container), then your container needs to be able
