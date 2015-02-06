@@ -18,6 +18,7 @@ class ContainerInstallerPlugin implements PluginInterface
 
     public function activate(Composer $composer, IOInterface $io)
     {
+    	// TODO: migrate this to plugin event system.
         $rootPackage = $composer->getPackage();
         if (isset($rootPackage)) {
             // Ensure we get the root package rather than its alias.
